@@ -1,17 +1,18 @@
 % ----------------------------------------------------------------------- %
 %    File_name: Calib.m
-%    Programmer: Seungjae Yoo                             
-%                                           
-%    Last Modified: 2020_02_18                           
-%                                                            
- % ----------------------------------------------------------------------- %
-function [interest_freq_band,interest_P, training_data,training_label] = Calib(answer,ref)
+%    Programmer: Seungjae Yoo
+%
+%    Last Modified: 2020_02_26
+%
+% ----------------------------------------------------------------------- %
+function [P, X_train, Y_train] = Calib(answer,ref)
 
 % Input parameters
 data_label = string(answer(1,1));
 m = double(string(answer(2,1))); % feature vector will have length (2m)
-referencing = double(string(answer(3,1))); % Non(0), CAR(1), LAP(2)
-
+referencing = double(string(answer(5,1))); % Non(0), CAR(1), LAP(2)
+f1 = double(string(answer(3,1)));
+f2 = double(string(answer(4,1)));
 
 % Load file
 
@@ -53,23 +54,23 @@ else
     cnt_y = cnt(3:55,:); % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
 end
 
-clear cnt 
+clear cnt
 
 %%
-% FB = [[4 8];[10 14]; [12 16]; [16 20]; [20 24]; [24 28]; [28 32]; [32 36]; [36 40]];
-FB = [[4 8];[8 12]; [12 16]; [16 20]];
-% FB = [[8 10]; [10 12]; [12 14]; [14 16]];
+
+FB = [f1 f2];
+
 
 feature_V = [];
 
-for fb = 1:length(FB)
+for fb = 1:size(FB,1)
     low_f = FB(fb,1);
     high_f = FB(fb,2);
-   
+    
     
     bpFilt = designfilt('bandpassiir','SampleRate',fs,'PassbandFrequency1',low_f, ...
-    'PassbandFrequency2',high_f,'StopbandFrequency1',low_f-2,'StopbandFrequency2',high_f+2, ...
-    'StopbandAttenuation1',40,'StopbandAttenuation2',40, 'PassbandRipple',1,'DesignMethod','cheby2');
+        'PassbandFrequency2',high_f,'StopbandFrequency1',low_f-2,'StopbandFrequency2',high_f+2, ...
+        'StopbandAttenuation1',40,'StopbandAttenuation2',40, 'PassbandRipple',1,'DesignMethod','cheby2');
     
     % Apply BPF
     for i = 1:size(cnt_y,1)
@@ -79,73 +80,84 @@ for fb = 1:length(FB)
 end
 
 
-%% 
+%%
 
-for fb = 1:length(FB)
-  
+for fb = 1:size(FB,1)
+    
     cnt_c = filtered{fb};
     
     % Calculate spatial filter
     a = 0; b = 0;
-    C_r = zeros(size(cnt_c,1)); C_l = zeros(size(cnt_c,1)); C_0 = zeros(size(cnt_c,1));
-   
+    C_1 = zeros(size(cnt_c,1)); C_2 = zeros(size(cnt_c,1));
+    C_0 = zeros(size(cnt_c,1));
+    
     % Training only for training data set
     for i = 1:length(mrk.pos)
         
         % One trial data
-        E = cnt_c(:,mrk.pos(1,i):mrk.pos(1,i)+chunk);        
-        E2 = cnt_c(:,mrk.pos(1,i)+chunk:mrk.pos(1,i)+2*chunk);
+        E = cnt_c(:,mrk.pos(1,i):mrk.pos(1,i)+chunk);
         
         % Covariance 연산
         C = E*E'/ trace( E*E');
-        C2 = E2*E2'/ trace( E2*E2');
         
         % According to its class, divide calculated covariance
-        if mrk.y(1,i) == 1
-            C_r = C_r+C;
-            a = a+1;            
+        if mrk.y(1,i) == -1
+            C_1 = C_1+C;
+            a = a+1;
         else
-            C_r = C_r+C;
+            C_2 = C_2+C;
             b = b+1;
         end
-        C_l = C_l + C_0;
+        
+        E = cnt_c(:,mrk.pos(1,i)+chunk+1:mrk.pos(1,i)+2*chunk);
+        C = E*E'/ trace( E*E');
+        C_0 = C_0 + C;
+        
     end
     
     % Average covariance of each class
-    C_r = C_r/(a+b);
-    C_l = C_l/(a+b);
+    C_1 = C_1/(a);
+    C_2 = C_2/(b);
+    C_0 = C_0/(a+b);
     
     % composite covariace
-    C_c = C_r + C_l;
+    C_c = C_1 + C_2 + C_0;
+%    C_c = C_1 + C_2;
     
     % EVD for composite covariance
     [V, D] = eig(C_c);
     
     % sort eigen vector with descend manner
-    [d, ind] = sort(abs(diag(D)),'descend');
-    D_new = diag(d);
-    V_new = V(:,ind);
+%         [d, ind] = sort(abs(diag(D)),'descend');
+%         D_new = diag(d);
+%         V_new = V(:,ind);
     
     % whitening transformation
-    whiten_tf = V_new*D_new^(-0.5);
+    whiten_tf = V*D^(-0.5);
     W = whiten_tf';
     
     % Apply whitening to each averaged covariances
-    Sa = W*C_r*W';
-    Sb = W*C_l*W';
+    S1 = W*C_1*W';
+    S2 = W*C_2*W';
+    S0 = W*C_0*W';
     
     % EVD for transformed covariance
-    [U, phsi] = eig(Sa,Sa+Sb);
+    [U, phsi] = eig(S1,S1+S2+S0);
+%     [U, phsi] = eig(S1,S1+S2);
     
-    % sort
-    [d, ind] = sort(abs(diag(phsi)),'descend');
-    phsi_new = diag(d);
+    
+    eig_values = diag(phsi);
+    N = length(eig_values);
+    score = max(eig_values', 1/(1+(eig_values./(1-eig_values))*(N-1)^(2)));
+    
+    [d, ind] = sort(score,'descend');
     U_new = U(:,ind);
     
     % Total Projection matrix,   Z = P'*X
     P = (U_new'*W)';
-    P_FB{fb} = P;    
     
+    X_train = [];
+    Y_train = [];
     % Calculate feature vector
     for i = 1:length(mrk.pos)
         
@@ -162,7 +174,13 @@ for fb = 1:length(FB)
         var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
         fp = log(var_vector);
         
-        feature_V(i,1+2*m*(fb-1):2*m*fb) = fp;        
+        X_train = [X_train; fp'];
+        
+        if mrk.y(1,i) == -1
+            Y_train = [Y_train; -1];
+        else
+            Y_train = [Y_train; 1];
+        end
         
         % One trial data
         E = cnt_c(:,mrk.pos(1,i)+chunk:mrk.pos(1,i)+2*chunk);
@@ -177,95 +195,12 @@ for fb = 1:length(FB)
         var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
         fp = log(var_vector);
         
-        feature_V2(i,1+2*m*(fb-1):2*m*fb) = fp;        
+        X_train = [X_train; fp'];
+        Y_train = [Y_train; 0];
     end
 end
-feature_V = [feature_V; feature_V2];
 
 
-% Caculate Mutual information
-for j = 1:size(feature_V,2)
-    f_j = feature_V(:,j);
-    H_w = -(0.5*log2(0.5)+0.5*log2(0.5));
-    
-    p_fj_w_1 = 1;  p_fj_w_2 = 1;
-    for i = 1:size(feature_V,1)
-        
-        tmp1 = f_j(i) - f_j(1:200);
-        tmp2 = f_j(i) - f_j(200:400);
-        
-        ha = ((4/(3*200))^0.2)*(var(tmp1))^0.5;
-        hb = ((4/(3*200))^0.2)*(var(tmp2))^0.5;
-        
-        pi_1 = (1/sqrt(2*pi))*exp((-1/(2*ha*ha))*tmp1.*tmp1);
-        pi_2 = (1/sqrt(2*pi))*exp((-1/(2*hb*hb))*tmp2.*tmp2);
-        
-        p_hat_fji_w_1 = (1/200)*sum(pi_1);
-        p_hat_fji_w_2 = (1/200)*sum(pi_2);
-        
-        p_fj_w_1 = p_fj_w_1*p_hat_fji_w_1;
-        p_fj_w_2 = p_fj_w_2*p_hat_fji_w_2;
-    end
-    
-    p_w_1_fj = p_fj_w_1*0.5/(p_fj_w_1*0.5 + p_fj_w_2*0.5);
-    p_w_2_fj = p_fj_w_2*0.5/(p_fj_w_1*0.5 + p_fj_w_2*0.5);    
-    
-    H_w_fj = -(p_w_1_fj*log2(p_w_1_fj) + p_w_2_fj*log2(p_w_2_fj));
-    
-    if isnan(H_w_fj)
-        H_w_fj = 0;
-    end
-    
-    H_w_f(1,j) = H_w_fj;
-    MI_j = H_w - H_w_fj;
-    
-    MI(1,j) = MI_j;
-end
-
-
-[d, ind_tmp] = sort(H_w_f);
-ind = ind_tmp(1:2); %%%%%%%%%%%%%%%% Change number of k %%%%%%%%%%%%%
-
-peter = [];
-for k = ind
-    if fix((k-1)/(2*m))==0
-        peter = [peter 1];
-    elseif fix((k-1)/(2*m))==1
-        peter = [peter 2];
-    elseif fix((k-1)/(2*m))==2
-        peter = [peter 3];
-    elseif fix((k-1)/(2*m))==3
-        peter = [peter 4];
-    elseif fix((k-1)/(2*m))==4
-        peter = [peter 5];
-    elseif fix((k-1)/(2*m))==5
-        peter = [peter 6];
-    elseif fix((k-1)/(2*m))==6
-        peter = [peter 7];
-    elseif fix((k-1)/(2*m))==7
-        peter = [peter 8];
-    elseif fix((k-1)/(2*m))==8
-        peter = [peter 9];
-    end        
-end
-
-% press = unique([peter]);
-% press = unique([peter 2]); %%%%%%%%%%%%%% If you want 8~12Hz always included
-press = [2];
-
-interest_freq_band = FB(press,:);
-interest_P = {};
-
-
-for pt=1:length(press)
-    interest_P{pt} = P_FB{press(pt)};
-end
-training_data=[];
-for pt = press
-    training_data = [training_data feature_V(:,1+2*m*(pt-1):2*m*(pt))];
-    
-end
-training_label = [repmat(1,1,200) repmat(0,1,200)];
 end
 % ----------------------------------------------------------------------- %
 %                               EOF
