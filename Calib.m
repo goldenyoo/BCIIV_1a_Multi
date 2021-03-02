@@ -121,8 +121,8 @@ for fb = 1:size(FB,1)
     C_0 = C_0/(a+b);
     
     % composite covariace
-    C_c = C_1 + C_2 + C_0;
-%    C_c = C_1 + C_2;
+%     C_c = C_1 + C_2 + C_0;
+   C_c = C_1 + C_2;
     
     % EVD for composite covariance
     [V, D] = eig(C_c);
@@ -182,21 +182,21 @@ for fb = 1:size(FB,1)
             Y_train = [Y_train; 1];
         end
         
-        % One trial data
-        E = cnt_c(:,mrk.pos(1,i)+chunk:mrk.pos(1,i)+2*chunk);
-        
-        % Project data using calculated spatial filter
-        Z = P'*E;
-        
-        % Feature vector
-        tmp_ind = size(Z,1);
-        Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-        
-        var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-        fp = log(var_vector);
-        
-        X_train = [X_train; fp'];
-        Y_train = [Y_train; 0];
+%         % One trial data
+%         E = cnt_c(:,mrk.pos(1,i)+chunk:mrk.pos(1,i)+2*chunk);
+%         
+%         % Project data using calculated spatial filter
+%         Z = P'*E;
+%         
+%         % Feature vector
+%         tmp_ind = size(Z,1);
+%         Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
+%         
+%         var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
+%         fp = log(var_vector);
+%         
+%         X_train = [X_train; fp'];
+%         Y_train = [Y_train; 0];
     end
 end
 

@@ -75,8 +75,8 @@ filtered{1} = cnt_x;
 
 
 %% Train SVM
- Mdl = fitcecoc(X_train,Y_train);
-%   Mdl = fitcsvm(X_train,Y_train);
+%  Mdl = fitcecoc(X_train,Y_train);
+  Mdl = fitcsvm(X_train,Y_train);
 %   Mdl = fitclinear(X_train,Y_train);
 
 %%
