@@ -86,8 +86,10 @@ for fb = 1:size(FB,1)
     
     cnt_c = filtered{fb};
     
-   
-
+    % Calculate spatial filter
+    a = 0; b = 0;
+    C_1 = zeros(size(cnt_c,1)); C_2 = zeros(size(cnt_c,1));
+    C_0 = zeros(size(cnt_c,1));
     
     % Training only for training data set
     ind_tmp = randperm(length(mrk.pos));
@@ -98,9 +100,6 @@ for fb = 1:size(FB,1)
     end
     
     for k = 1:size(batch,1)
-        a = 0; b = 0;
-        C_1 = zeros(size(cnt_c,1)); C_2 = zeros(size(cnt_c,1));
-        C_0 = zeros(size(cnt_c,1));
         for i = batch(k,:)
             % One trial data
             E = cnt_c(:,mrk.pos(1,i):mrk.pos(1,i)+chunk);
@@ -165,8 +164,7 @@ for fb = 1:size(FB,1)
         P_batch{k} = (U_new'*W)';
     end
     
-    P = P_batch{1} + P_batch{2} + P_batch{3} + P_batch{4} + P_batch{5} + P_batch{6} + P_batch{7} + P_batch{8} + P_batch{9} + P_batch{10};
-    P = P/10;
+    P = P_batch{1} + P_batch{2} + P_batch{3} + P_batch{4} + P_batch{5} + P_batch{6} + P_batch{7} + 
     
     X_train = [];
     Y_train = [];

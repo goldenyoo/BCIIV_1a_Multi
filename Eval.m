@@ -75,18 +75,19 @@ filtered{1} = cnt_x;
 
 
 %% Train SVM
- Mdl = fitcecoc(X_train,Y_train);
-%   Mdl = fitcsvm(X_train,Y_train);
+%  Mdl = fitcecoc(X_train,Y_train);
+  Mdl = fitcsvm(X_train,Y_train);
 %   Mdl = fitclinear(X_train,Y_train);
 
 %%
+fprintf('\n');
 
 predictions = [];
 iter = 1;
 while iter + chunk <= size(filtered{1},2)
-%     if rem(iter,100000)==0
-%         fprintf('%d / %d\n',iter,size(filtered{1},2)-chunk);
-%     end
+    if rem(iter,100000)==0
+        fprintf('%d / %d\n',iter,size(filtered{1},2)-chunk);
+    end
     
     cnt_c = filtered{1};
     
