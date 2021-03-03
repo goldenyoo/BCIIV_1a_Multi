@@ -150,8 +150,8 @@ for fb = 1:size(FB,1)
         S0 = W*C_0*W';
         
         % EVD for transformed covariance
-        [U, phsi] = eig(S1,S1+S2+S0);
-        %     [U, phsi] = eig(S1,S1+S2);
+%         [U, phsi] = eig(S1,S1+S2+S0);
+            [U, phsi] = eig(S1,S1+S2);
         
         
         eig_values = diag(phsi);
