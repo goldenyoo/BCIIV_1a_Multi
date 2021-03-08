@@ -35,9 +35,7 @@ for i = 1:size(true_y,1)
         total_12 = total_12 + 1;
         if predictions(i) == -1
             score = score + 1;
-            score_12 = score_12 +1;
-        elseif predictions(i) == 1
-            score_12 = score_12 +1;
+            score_12 = score_12 +1;        
         else
             mse = mse + (true_y(i)-predictions(i))^2;
         end
@@ -46,9 +44,7 @@ for i = 1:size(true_y,1)
          total_12 = total_12 + 1;
         if predictions(i) == 1
             score = score + 1;
-            score_12 = score_12 +1;
-        elseif predictions(i) == -1
-            score_12 = score_12 +1;
+            score_12 = score_12 +1;       
         else
             mse = mse + (true_y(i)-predictions(i))^2;
         end
