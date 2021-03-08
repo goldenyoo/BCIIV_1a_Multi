@@ -5,7 +5,7 @@
 %    Last Modified: 2020_02_26
 %
 % ----------------------------------------------------------------------- %
-function [predictions] = Eval(answer,P, X_train, Y_train)
+function [predictions] = Eval(answer,P_01,P_02,P_12, X_train, Y_train)
 % Input parameters
 data_label = string(answer(1,1));
 m = double(string(answer(2,1))); % feature vector will have length (2m)
@@ -19,7 +19,7 @@ ref=29;
 % Load file
 
 FILENAME = strcat('C:\Users\유승재\Desktop\Motor Imagery EEG data\BCICIV_1_mat\BCICIV_eval_ds1',data_label,'.mat');
-chunk = 400;
+chunk = 150;
 fs = 100;
 
 load(FILENAME);
@@ -75,8 +75,8 @@ filtered{1} = cnt_x;
 
 
 %% Train SVM
-%  Mdl = fitcecoc(X_train,Y_train);
-  Mdl = fitcsvm(X_train,Y_train);
+ Mdl = fitcecoc(X_train,Y_train);
+%   Mdl = fitcsvm(X_train,Y_train);
 %   Mdl = fitclinear(X_train,Y_train);
 
 %%
@@ -84,32 +84,53 @@ filtered{1} = cnt_x;
 predictions = [];
 iter = 1;
 while iter + chunk <= size(filtered{1},2)
-%     if rem(iter,100000)==0
-%         fprintf('%d / %d\n',iter,size(filtered{1},2)-chunk);
-%     end
+    if rem(iter,100000)==0
+        fprintf('%d / %d\n',iter,size(filtered{1},2)-chunk);
+    end
     
     cnt_c = filtered{1};
     
-    E = cnt_c(:, iter:iter+chunk);
-    Z = P'*E;
+    E = cnt_c(:, iter:iter+chunk-1);
+    
+    Z = P_01'*E;
     
     % Feature vector
     tmp_ind = size(Z,1);
     Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
     
     var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-    fp = log(var_vector);
+    fp_01 = log(var_vector);
     
-    evaluation_trial = fp';
+     Z = P_02'*E;
+    
+    % Feature vector
+    tmp_ind = size(Z,1);
+    Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
+    
+    var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
+    fp_02 = log(var_vector);
+    
+     Z = P_12'*E;
+    
+    % Feature vector
+    tmp_ind = size(Z,1);
+    Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
+    
+    var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
+    fp_12 = log(var_vector);
+    
+    fp = [fp_01' fp_02' fp_12'];
+    
+    evaluation_trial = fp;
     
     % Run classifier
     
     prediction = predict(Mdl,evaluation_trial);
-    predictions = [predictions prediction];
+    predictions = [predictions repmat(prediction,1,chunk*0.8)];
     
-    iter = iter + 1;
+    iter = iter + chunk*0.8;
 end
-    predictions = [predictions repmat(0,1,chunk)];
+    predictions = [predictions repmat(0,1,size(filtered{1},2)- iter + 1)];
 
 end
 % ----------------------------------------------------------------------- %

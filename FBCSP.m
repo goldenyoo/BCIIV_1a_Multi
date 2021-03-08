@@ -31,16 +31,25 @@ for i = 1:length(ref_method)
     
     answer(5,1) = {ref_method(i)};
     
-    [P, X_train, Y_train] = Calib(answer,ref);
+    [P_01,P_02,P_12, X_train, Y_train] = Calib(answer,ref);
    
-    [predictions] = Eval(answer, P, X_train, Y_train); 
-    [score, total, mse, tmp] = Check(answer,predictions);
+    [predictions] = Eval(answer, P_01,P_02,P_12, X_train, Y_train); 
+    [score, total, mse, tmp,total_0, total_12, score_0, score_12] = Check(answer,predictions);
     
     fprintf('\nData_Label: %s\n',string(answer(1,1)));
     fprintf('Re-referencing: %d\n',ref_method(i));
-    fprintf('%d / %d\n',score,total);
+    
     fprintf('MSE: %f\n',mse);
-    fprintf("SCORE: %f\n",100*score/total);    
+       
+    
+    fprintf('\nTotal: %d / %d\n',score,total);
+    fprintf("SCORE: %f\n",100*score/total); 
+    
+    fprintf('\nTotal_0: %d / %d\n',score_0,total_0);
+    fprintf("SCORE: %f\n",100*score_0/total_0); 
+    
+    fprintf('\nTotal_12: %d / %d\n',score_12,total_12);
+    fprintf("SCORE: %f\n",100*score_12/total_12); 
 end
 
 % ----------------------------------------------------------------------- %
