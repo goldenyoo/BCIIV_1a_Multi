@@ -90,9 +90,8 @@ C_0 = zeros(size(cnt_c,1));
 
 % Training only for training data set
 for i = 1:length(mrk.pos)
-    h = 100;
-    while h+150 <= 400
-        E = cnt_c(:,mrk.pos(1,i)+h:mrk.pos(1,i)+h+150);
+   
+        E = cnt_c(:,mrk.pos(1,i)+100:mrk.pos(1,i)+400);
         
         % Covariance 연산
         C = E*E'/ trace( E*E');
@@ -105,12 +104,9 @@ for i = 1:length(mrk.pos)
             C_2 = C_2+C;
             b = b+1;
         end
-        E = cnt_c(:,mrk.pos(1,i)+h+400:mrk.pos(1,i)+h+550);
+        E = cnt_c(:,mrk.pos(1,i)+500:mrk.pos(1,i)+800);
         C = E*E'/ trace( E*E');
-        C_0 = C_0 + C;
-        
-        h = h+1;
-    end    
+        C_0 = C_0 + C;     
     
 end
 
@@ -121,35 +117,6 @@ C_0 = C_0/(a+b);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%% P_01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% composite covariace
-C_c = C_0 + C_1 ;
-
-% EVD for composite covariance
-[V, D] = eig(C_c);
-
-% sort eigen vector with descend manner
-[d, ind] = sort(abs(diag(D)),'descend');
-D_new = diag(d);
-V_new = V(:,ind);
-
-% whitening transformation
-whiten_tf = V*D_new^(-0.5);
-W = whiten_tf';
-
-% Apply whitening to each averaged covariances
-S0 = W*C_0*W';
-S1 = W*C_1*W';
-
-% EVD for transformed covariance
-[U, phsi] = eig(S0,S1);
-
-[d, ind] = sort(abs(diag(phsi)),'descend');
-U_new = U(:,ind);
-
-% Total Projection matrix,   Z = P'*X
-P_01 = (U_new'*W)';
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%% P_02 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % composite covariace
 C_c = C_0 + C_2 ;
 
@@ -167,6 +134,7 @@ W = whiten_tf';
 
 % Apply whitening to each averaged covariances
 S0 = W*C_0*W';
+S1 = W*C_1*W';
 S2 = W*C_2*W';
 
 % EVD for transformed covariance
@@ -176,187 +144,58 @@ S2 = W*C_2*W';
 U_new = U(:,ind);
 
 % Total Projection matrix,   Z = P'*X
-P_02 = (U_new'*W)';
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%% P_012 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% composite covariace
-C_c = C_0 + (a*C_1+b*C_2)/(a+b) ;
-
-% EVD for composite covariance
-[V, D] = eig(C_c);
-
-% sort eigen vector with descend manner
-[d, ind] = sort(abs(diag(D)),'descend');
-D_new = diag(d);
-V_new = V(:,ind);
-
-% whitening transformation
-whiten_tf = V*D_new^(-0.5);
-W = whiten_tf';
-
-% Apply whitening to each averaged covariances
-S0 = W*C_0*W';
-S12 = W*((a*C_1+b*C_2)/(a+b))*W';
-
-% EVD for transformed covariance
-[U, phsi] = eig(S0,S12);
-
-[d, ind] = sort(abs(diag(phsi)),'descend');
-U_new = U(:,ind);
-
-% Total Projection matrix,   Z = P'*X
 P_012 = (U_new'*W)';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%% P_01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% composite covariace
-C_c = C_1 + C_2 ;
-
-% EVD for composite covariance
-[V, D] = eig(C_c);
-
-% sort eigen vector with descend manner
-[d, ind] = sort(abs(diag(D)),'descend');
-D_new = diag(d);
-V_new = V(:,ind);
-
-% whitening transformation
-whiten_tf = V*D_new^(-0.5);
-W = whiten_tf';
-
-% Apply whitening to each averaged covariances
-S1 = W*C_1*W';
-S2 = W*C_2*W';
-
-% EVD for transformed covariance
-[U, phsi] = eig(S1,S2);
-
-[d, ind] = sort(abs(diag(phsi)),'descend');
-U_new = U(:,ind);
-
-% Total Projection matrix,   Z = P'*X
-P_12 = (U_new'*W)';
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-X_train_0 = [];
-X_train_12 = [];
-for i = 1:length(mrk.pos)
-    h = 100;
-    while h+150 <= 400
-        E = cnt_c(:,mrk.pos(1,i)+h:mrk.pos(1,i)+h+150);
-        
-        Z = P_012'*E;
-        % Feature vector
-        tmp_ind = size(Z,1);
-        Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-        var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-        fp_012 = log(var_vector);
-        
-        X_train_12 = [X_train_12 fp_012];
-        
-        % One trial data
-        E = cnt_c(:,mrk.pos(1,i)+h+400:mrk.pos(1,i)+h+550);
-        
-        Z = P_012'*E;
-        % Feature vector
-        tmp_ind = size(Z,1);
-        Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-        var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-        fp_012 = log(var_vector);
-        
-        X_train_0 = [X_train_0 fp_012];
-        
-        h = h+1;
-    end 
-end
-M_r = mean(X_train_0,2);
-M_12 = mean(X_train_12,2);
-
-Q_r = zeros(2*m);
-for i = 1:length(X_train_0)
-    tmp = (X_train_0(:,i) - M_r)*(X_train_0(:,i) - M_r)';
-    Q_r = Q_r + tmp;
-end
-Q_r = (1/(length(X_train_0)-1))*Q_r;
-
-Q_12 = zeros(2*m);
-for i = 1:length(X_train_12)
-    tmp = (X_train_12(:,i) - M_12)*(X_train_12(:,i) - M_12)';
-    Q_12 = Q_12 + tmp;
-end
-Q_12 = (1/(length(X_train_12)-1))*Q_12;
-
+f1 = figure;
+f2 = figure;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 X_train_0 = [];
 X_train_1 = [];
+X_train_2 = [];
 for i = 1:length(mrk.pos)
-    
+    fprintf("%d\n",i);
     if mrk.y(1,i) == -1
         h = 100;
-        while h+150 <= 400
-            E = cnt_c(:,mrk.pos(1,i)+h:mrk.pos(1,i)+h+150);
+        while h== 100
+            E = cnt_c(:,mrk.pos(1,i)+100:mrk.pos(1,i)+400);
             
-            Z = P_01'*E;
+            Z = P_012'*E;
             % Feature vector
             tmp_ind = size(Z,1);
             Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
+            
+            % Graphical represent
+            figure(f1)
+            scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'b'); hold on;
+            
+            
             var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
             fp_01 = log(var_vector);
-            
+            figure(f2)
+            scatter3(fp_01(1),fp_01(2),fp_01(4),'b'); hold on;
             X_train_1 = [X_train_1 fp_01];
             
             h = h + 1;
         end
-    end
-    h = 100;
-    while h+150 <= 400
-        E = cnt_c(:,mrk.pos(1,i)+h+400:mrk.pos(1,i)+h+550);
-        
-        Z = P_01'*E;
-        % Feature vector
-        tmp_ind = size(Z,1);
-        Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-        var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-        fp_01 = log(var_vector);
-        
-        X_train_0 = [X_train_0 fp_01];
-        
-        h = h+1;
-    end
-      
-end
-M_r1 = mean(X_train_0,2);
-M_1 = mean(X_train_1,2);
-
-Q_r1 = zeros(2*m);
-for i = 1:length(X_train_0)
-    tmp = (X_train_0(:,i) - M_r1)*(X_train_0(:,i) - M_r1)';
-    Q_r1 = Q_r1 + tmp;
-end
-Q_r1 = (1/(length(X_train_0)-1))*Q_r1;
-
-Q_1 = zeros(2*m);
-for i = 1:length(X_train_1)
-    tmp = (X_train_1(:,i) - M_1)*(X_train_1(:,i) - M_1)';
-    Q_1 = Q_1 + tmp;
-end
-Q_1 = (1/(length(X_train_1)-1))*Q_1;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-X_train_0 = [];
-X_train_2 = [];
-for i = 1:length(mrk.pos)
-    
-    if mrk.y(1,i) == 1
-         h = 100;
-        while h+150 <= 400
-            E = cnt_c(:,mrk.pos(1,i)+h:mrk.pos(1,i)+h+150);
+    elseif mrk.y(1,i) == 1
+        h = 100;
+        while h== 100
+            E = cnt_c(:,mrk.pos(1,i)+100:mrk.pos(1,i)+400);
             
-            Z = P_02'*E;
+            Z = P_012'*E;
             % Feature vector
             tmp_ind = size(Z,1);
             Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
+            
+%             figure(f1)
+%             scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'g'); hold on;
+%             
+            
             var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
             fp_02 = log(var_vector);
+% %             
+%             figure(f2)
+%             scatter3(fp_02(1),fp_02(2),fp_02(4),'g'); hold on;
             
             X_train_2 = [X_train_2 fp_02];
             
@@ -364,96 +203,31 @@ for i = 1:length(mrk.pos)
         end
     end
     h = 100;
-    while h+150 <= 400
-        E = cnt_c(:,mrk.pos(1,i)+h+400:mrk.pos(1,i)+h+550);
+    while h== 100
+        E = cnt_c(:,mrk.pos(1,i)+500:mrk.pos(1,i)+800);
         
-        Z = P_02'*E;
+        Z = P_012'*E;
         % Feature vector
         tmp_ind = size(Z,1);
         Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-        var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-        fp_02 = log(var_vector);
         
-        X_train_0 = [X_train_0 fp_02];
+        figure(f1)
+        scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'r'); hold on;
+        
+        
+        var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
+        fp_01 = log(var_vector);
+        
+        figure(f2)
+            scatter3(fp_01(1),fp_01(2),fp_01(4),'r'); hold on;
+
+        X_train_0 = [X_train_0 fp_01];
         
         h = h+1;
     end
       
 end
-M_r2 = mean(X_train_0,2);
-M_2 = mean(X_train_2,2);
 
-Q_r2 = zeros(2*m);
-for i = 1:length(X_train_0)
-    tmp = (X_train_0(:,i) - M_r2)*(X_train_0(:,i) - M_r2)';
-    Q_r2 = Q_r2 + tmp;
-end
-Q_r2 = (1/(length(X_train_0)-1))*Q_r2;
-
-Q_2 = zeros(2*m);
-for i = 1:length(X_train_2)
-    tmp = (X_train_2(:,i) - M_2)*(X_train_2(:,i) - M_2)';
-    Q_2 = Q_2 + tmp;
-end
-Q_2 = (1/(length(X_train_2)-1))*Q_2;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-X_train_1 = [];
-X_train_2 = [];
-for i = 1:length(mrk.pos)
-    if mrk.y(1,i) == -1
-        h = 100;
-        while h+150 <= 400
-            E = cnt_c(:,mrk.pos(1,i)+h:mrk.pos(1,i)+h+150);
-            
-            Z = P_12'*E;
-            % Feature vector
-            tmp_ind = size(Z,1);
-            Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-            var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-            fp_1 = log(var_vector);
-            
-            X_train_1 = [X_train_1 fp_1];
-            
-            h = h+1;
-        end
-    else
-         h = 100;
-        while h+150 <= 400
-            E = cnt_c(:,mrk.pos(1,i)+h:mrk.pos(1,i)+h+150);
-            
-            Z = P_12'*E;
-            % Feature vector
-            tmp_ind = size(Z,1);
-            Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-            var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-            fp_2 = log(var_vector);
-            
-            X_train_2 = [X_train_2 fp_2];
-            
-            h = h+1;
-        end
-    end
-    
-      
-end
-M_c1 = mean(X_train_1,2);
-M_c2 = mean(X_train_2,2);
-
-Q_c1 = zeros(2*m);
-for i = 1:length(X_train_1)
-    tmp = (X_train_1(:,i) - M_c1)*(X_train_1(:,i) - M_c1)';
-    Q_c1 = Q_c1 + tmp;
-end
-Q_c1 = (1/(length(X_train_1)-1))*Q_c1;
-
-Q_c2 = zeros(2*m);
-for i = 1:length(X_train_2)
-    tmp = (X_train_2(:,i) - M_c2)*(X_train_2(:,i) - M_c2)';
-    Q_c2 = Q_c2 + tmp;
-end
-Q_c2 = (1/(length(X_train_2)-1))*Q_c2;
 
 
 end
