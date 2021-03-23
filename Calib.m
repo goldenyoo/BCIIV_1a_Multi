@@ -5,7 +5,7 @@
 %    Last Modified: 2020_02_26
 %
 % ----------------------------------------------------------------------- %
-function [P_01,P_02,P_012,P_12,M_r1,M_1, M_r2,M_2, M_r, M_12,M_c1,M_c2, Q_r1, Q_r2, Q_1,Q_2,Q_r,Q_12,Q_c1,Q_c2] = Calib(answer,ref)
+function [P,X_train,Y_train] = Calib(answer,ref)
 
 % Input parameters
 data_label = string(answer(1,1));
@@ -35,15 +35,15 @@ if referencing ~= 0
     
     % common average
     if referencing == 1
-        cnt_y = cnt(3:55,:); % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
-        Means = (1/size(cnt_y,1))*sum(cnt_y);
+        cnt_y = cnt([27 29 31 44 46 50 52 54],:); % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
+        Means = (1/size(cnt,1))*sum(cnt);
         for i = 1 : size(cnt_y,1)
             cnt_y(i,:) = cnt_y(i,:) - Means; % CAR
         end
         % LAP
     elseif referencing == 2
         cnt_n = myLAP(cnt,nfo); % Laplacian
-        cnt_y = cnt_n(3:55,:); % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
+        cnt_y = cnt_n([27 29 31 44 46 50 52 54],:); % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
     end
 else
     %%% Calculate differential voltage
@@ -51,7 +51,7 @@ else
         cnt(i,:) = cnt(i,:) - cnt(ref,:);
     end
     
-    cnt_y = cnt(3:55,:); % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
+    cnt_y = cnt([27 29 31 44 46 50 52 54],:); % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
 end
 
 clear cnt
@@ -118,7 +118,7 @@ C_0 = C_0/(a+b);
 
 %%%%%%%%%%%%%%%%%%%%%%%% P_01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % composite covariace
-C_c = C_0 + C_2 ;
+C_c = C_0 + C_1 + C_2 ;
 
 % EVD for composite covariance
 [V, D] = eig(C_c);
@@ -138,51 +138,54 @@ S1 = W*C_1*W';
 S2 = W*C_2*W';
 
 % EVD for transformed covariance
-[U, phsi] = eig(S0,S2);
+% [U, phsi] = eig(S0,S2);
 
-[d, ind] = sort(abs(diag(phsi)),'descend');
-U_new = U(:,ind);
+A = [S0 S1 S2];
+% A = [C_0 C_1 C_2];
+threshold = 1.0e-8;
+[ V ,  qDs ]= rjd(A,threshold);
 
-% Total Projection matrix,   Z = P'*X
-P_012 = (U_new'*W)';
+% [d, ind] = sort(abs(diag(phsi)),'descend');
+% U_new = U(:,ind);
+
+P = (V'*W)';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-f1 = figure;
-f2 = figure;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-X_train_0 = [];
+% f1 = figure;
+% f2 = figure;
 X_train_1 = [];
 X_train_2 = [];
+X_train_0 = [];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 for i = 1:length(mrk.pos)
-    fprintf("%d\n",i);
+%     fprintf("%d\n",i);
     if mrk.y(1,i) == -1
-        h = 100;
-        while h== 100
+     
             E = cnt_c(:,mrk.pos(1,i)+100:mrk.pos(1,i)+400);
             
-            Z = P_012'*E;
+            Z = P'*E;
             % Feature vector
             tmp_ind = size(Z,1);
             Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
             
             % Graphical represent
-            figure(f1)
-            scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'b'); hold on;
-            
+%             figure(f1)
+%             scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'b'); hold on;
+%             
             
             var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
             fp_01 = log(var_vector);
-            figure(f2)
-            scatter3(fp_01(1),fp_01(2),fp_01(4),'b'); hold on;
+%             figure(f2)
+%             scatter3(fp_01(1),fp_01(2),fp_01(4),'b'); hold on;
             X_train_1 = [X_train_1 fp_01];
             
-            h = h + 1;
-        end
+      
     elseif mrk.y(1,i) == 1
-        h = 100;
-        while h== 100
+       
             E = cnt_c(:,mrk.pos(1,i)+100:mrk.pos(1,i)+400);
             
-            Z = P_012'*E;
+            Z = P'*E;
             % Feature vector
             tmp_ind = size(Z,1);
             Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
@@ -198,36 +201,33 @@ for i = 1:length(mrk.pos)
 %             scatter3(fp_02(1),fp_02(2),fp_02(4),'g'); hold on;
             
             X_train_2 = [X_train_2 fp_02];
-            
-            h = h+1;
-        end
+        
     end
-    h = 100;
-    while h== 100
+  
         E = cnt_c(:,mrk.pos(1,i)+500:mrk.pos(1,i)+800);
         
-        Z = P_012'*E;
+        Z = P'*E;
         % Feature vector
         tmp_ind = size(Z,1);
         Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
         
-        figure(f1)
-        scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'r'); hold on;
+%         figure(f1)
+%         scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'r'); hold on;
         
         
         var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
         fp_01 = log(var_vector);
         
-        figure(f2)
-            scatter3(fp_01(1),fp_01(2),fp_01(4),'r'); hold on;
+%         figure(f2)
+%         scatter3(fp_01(1),fp_01(2),fp_01(4),'r'); hold on;
 
-        X_train_0 = [X_train_0 fp_01];
-        
-        h = h+1;
-    end
+        X_train_0 = [X_train_0 fp_01];      
+ 
       
 end
 
+X_train = [X_train_0'; X_train_1'; X_train_2'];
+Y_train = [repmat(0,size(X_train_0',1),1); repmat(-1,size(X_train_1',1),1); repmat(1,size(X_train_2',1),1)];
 
 
 end
