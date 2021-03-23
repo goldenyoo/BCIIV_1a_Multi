@@ -118,117 +118,110 @@ C_0 = C_0/(a+b);
 
 %%%%%%%%%%%%%%%%%%%%%%%% P_01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % composite covariace
-C_c = C_0 + C_1 + C_2 ;
-
-% EVD for composite covariance
-[V, D] = eig(C_c);
-
-% sort eigen vector with descend manner
-[d, ind] = sort(abs(diag(D)),'descend');
-D_new = diag(d);
-V_new = V(:,ind);
-
-% whitening transformation
-whiten_tf = V*D_new^(-0.5);
-W = whiten_tf';
-
-% Apply whitening to each averaged covariances
-S0 = W*C_0*W';
-S1 = W*C_1*W';
-S2 = W*C_2*W';
-
-% EVD for transformed covariance
-% [U, phsi] = eig(S0,S2);
-
-A = [S0 S1 S2];
-% A = [C_0 C_1 C_2];
-threshold = 1.0e-8;
-[ V ,  qDs ]= rjd(A,threshold);
-
-% [d, ind] = sort(abs(diag(phsi)),'descend');
-% U_new = U(:,ind);
-
-P = (V'*W)';
+for i = 1:3
+    if i ==1
+        C_a = C_0;
+        C_b = C_1;
+    elseif i == 2
+        C_a = C_0;
+        C_b = C_2;
+    else
+        C_a = C_0;
+        C_b = C_1;
+    end
+    
+    C_c = C_a + C_b;
+    
+    % EVD for composite covariance
+    [V, D] = eig(C_c);
+    
+    % sort eigen vector with descend manner
+    [d, ind] = sort(abs(diag(D)),'descend');
+    D_new = diag(d);
+    V_new = V(:,ind);
+    
+    % whitening transformation
+    whiten_tf = V_new*D_new^(-0.5);
+    W = whiten_tf';
+    
+    % Apply whitening to each averaged covariances
+    Sa = W*C_a*W';
+    Sb = W*C_b*W';
+    
+    
+    % EVD for transformed covariance
+    [U, phsi] = eig(Sa,Sb);
+    
+    [d, ind] = sort(abs(diag(phsi)),'descend');
+    U_new = U(:,ind);
+    
+    P{i} = (U_new'*W)';
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % f1 = figure;
 % f2 = figure;
-X_train_1 = [];
-X_train_2 = [];
-X_train_0 = [];
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for i = 1:length(mrk.pos)
-%     fprintf("%d\n",i);
-    if mrk.y(1,i) == -1
-     
+for k = 1:3
+    X_train_1 = [];
+    X_train_2 = [];
+    X_train_0 = [];
+
+    for i = 1:length(mrk.pos)
+        %     fprintf("%d\n",i);
+        if mrk.y(1,i) == -1
+            
             E = cnt_c(:,mrk.pos(1,i)+100:mrk.pos(1,i)+400);
             
-            Z = P'*E;
+            Z = P{k}'*E;
             % Feature vector
             tmp_ind = size(Z,1);
             Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-            
-            % Graphical represent
-%             figure(f1)
-%             scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'b'); hold on;
-%             
-            
+                        
             var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
             fp_01 = log(var_vector);
-%             figure(f2)
-%             scatter3(fp_01(1),fp_01(2),fp_01(4),'b'); hold on;
+
             X_train_1 = [X_train_1 fp_01];
             
-      
-    elseif mrk.y(1,i) == 1
-       
+            
+        elseif mrk.y(1,i) == 1
+            
             E = cnt_c(:,mrk.pos(1,i)+100:mrk.pos(1,i)+400);
             
-            Z = P'*E;
+            Z = P{k}'*E;
             % Feature vector
             tmp_ind = size(Z,1);
             Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
             
-%             figure(f1)
-%             scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'g'); hold on;
-%             
             
             var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-            fp_02 = log(var_vector);
-% %             
-%             figure(f2)
-%             scatter3(fp_02(1),fp_02(2),fp_02(4),'g'); hold on;
-            
+            fp_02 = log(var_vector);            
             X_train_2 = [X_train_2 fp_02];
+            
+        end
         
-    end
-  
         E = cnt_c(:,mrk.pos(1,i)+500:mrk.pos(1,i)+800);
         
-        Z = P'*E;
+        Z = P{k}'*E;
         % Feature vector
         tmp_ind = size(Z,1);
-        Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-        
-%         figure(f1)
-%         scatter3(Z(1,:), Z(size(cnt_c,1),:),Z(2,:),'r'); hold on;
-        
+        Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];    
         
         var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-        fp_01 = log(var_vector);
-        
-%         figure(f2)
-%         scatter3(fp_01(1),fp_01(2),fp_01(4),'r'); hold on;
-
-        X_train_0 = [X_train_0 fp_01];      
- 
-      
+        fp_01 = log(var_vector);        
+        X_train_0 = [X_train_0 fp_01];
+    end
+    if k == 1
+        X_train{k} = [X_train_0'; X_train_1'];
+        Y_train{k} = [repmat(0,size(X_train_0',1),1); repmat(-1,size(X_train_1',1),1)];
+    elseif k ==2
+        X_train{k} = [X_train_0'; X_train_2'];
+        Y_train{k} = [repmat(0,size(X_train_0',1),1); repmat(1,size(X_train_2',1),1)];
+    else
+        X_train{k} = [X_train_1'; X_train_2'];
+        Y_train{k} = [repmat(-1,size(X_train_1',1),1); repmat(1,size(X_train_2',1),1)];
+    end
 end
-
-X_train = [X_train_0'; X_train_1'; X_train_2'];
-Y_train = [repmat(0,size(X_train_0',1),1); repmat(-1,size(X_train_1',1),1); repmat(1,size(X_train_2',1),1)];
-
 
 end
 % ----------------------------------------------------------------------- %

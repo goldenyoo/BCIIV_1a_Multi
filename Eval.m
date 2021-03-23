@@ -19,7 +19,7 @@ ref=29;
 % Load file
 
 FILENAME = strcat('C:\Users\유승재\Desktop\Motor Imagery EEG data\BCICIV_1_mat\BCICIV_eval_ds1',data_label,'.mat');
-chunk = 300;
+
 fs = 100;
 
 load(FILENAME);
@@ -75,9 +75,10 @@ filtered{1} = cnt_x;
 
 
 %% Train SVM
-% Mdl = fitcecoc(X_train,Y_train);
- Mdl = fitcecoc(X_train,Y_train,'Learners','naivebayes');
-%   Mdl = fitcsvm(X_train,Y_train);
+
+Md1 = fitcdiscr(X_train{1},Y_train{1});
+Md2 = fitcdiscr(X_train{2},Y_train{2});
+Md3 = fitcdiscr(X_train{3},Y_train{3});
 
 FILENAME = strcat('C:\Users\유승재\Desktop\Motor Imagery EEG data\true_labels\BCICIV_eval_ds1',data_label,'_1000Hz_true_y.mat');
 load(FILENAME);
@@ -88,33 +89,38 @@ true_y = downsample(true_y,10);
 
 predictions = [];
 iter = 1;
+
+chunk = 150;
+
+predictions = zeros(4,size(filtered{1},2));
+
 while iter + chunk <= size(filtered{1},2)
     
     cnt_c = filtered{1};
     
     E = cnt_c(:, iter:iter+chunk-1);
     
+    for k = 1:3
+        Z = P{k}'*E;
+        % Feature vector
+        tmp_ind = size(Z,1);
+        Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
+        var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
+        fp(:,k) = log(var_vector);
+    end
     
-    Z = P'*E;
-    % Feature vector
-    tmp_ind = size(Z,1);
-    Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];
-    var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-    fp = log(var_vector);
-    
-    prediction = predict(Mdl,fp');
-    pd = true_y(iter);
-    predictions = [predictions prediction];
-    
-%     predictions = [predictions repmat(prediction,1,chunk*0.8)];
+    prediction1 = predict(Md1,fp(:,1)'); %%%  0 vs -1
+    prediction2 = predict(Md2,fp(:,2)'); %%% 0 vs +1
+    prediction3 = predict(Md3,fp(:,3)'); %%% -1 vs +1
+    prediction0 = true_y(iter);
+    for tmpp = iter:iter+chunk-1
+        predictions(:,tmpp) = [prediction0; prediction1; prediction2; prediction3];
+    end
+    iter = iter + chunk*0.8;
 
-    
-    
-%     iter = iter + chunk*0.8;
-    iter = iter + 1;
 
 end
-    predictions = [predictions repmat(0,1,size(filtered{1},2)- iter + 1)];
+
 
 end
 % ----------------------------------------------------------------------- %
