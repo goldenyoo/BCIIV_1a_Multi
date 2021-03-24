@@ -2,10 +2,10 @@
 %    File_name: Calib.m
 %    Programmer: Seungjae Yoo
 %
-%    Last Modified: 2020_02_26
+%    Last Modified: 2020_03_23
 %
 % ----------------------------------------------------------------------- %
-function [P,X_train,Y_train] = Calib(answer,ref)
+function [P,M_train,Q_train] = Calib(answer,ref)
 
 % Input parameters
 data_label = string(answer(1,1));
@@ -35,11 +35,12 @@ if referencing ~= 0
     
     % common average
     if referencing == 1
-        cnt_y = cnt([27 29 31 44 46 50 52 54],:); % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
+        cnt_y = cnt; % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
         Means = (1/size(cnt,1))*sum(cnt);
         for i = 1 : size(cnt_y,1)
             cnt_y(i,:) = cnt_y(i,:) - Means; % CAR
         end
+        cnt_y = cnt_y([27 29 31 44 46 50 52 54],:);
         % LAP
     elseif referencing == 2
         cnt_n = myLAP(cnt,nfo); % Laplacian
@@ -74,9 +75,9 @@ for fb = 1:size(FB,1)
     
     % Apply BPF
     for i = 1:size(cnt_y,1)
-        cnt_x(i,:) = filtfilt(bpFilt, cnt_y(i,:));
+        cnt_y(i,:) = filtfilt(bpFilt, cnt_y(i,:));
     end
-    filtered{fb} = cnt_x;
+    filtered{fb} = cnt_y;
 end
 
 
@@ -104,7 +105,7 @@ for i = 1:length(mrk.pos)
             C_2 = C_2+C;
             b = b+1;
         end
-        E = cnt_c(:,mrk.pos(1,i)+500:mrk.pos(1,i)+800);
+        E = cnt_c(:,mrk.pos(1,i)+400:mrk.pos(1,i)+800);
         C = E*E'/ trace( E*E');
         C_0 = C_0 + C;     
     
@@ -126,8 +127,8 @@ for i = 1:3
         C_a = C_0;
         C_b = C_2;
     else
-        C_a = C_0;
-        C_b = C_1;
+        C_a = C_1;
+        C_b = C_2;
     end
     
     C_c = C_a + C_b;
@@ -150,9 +151,10 @@ for i = 1:3
     
     
     % EVD for transformed covariance
-    [U, phsi] = eig(Sa,Sb);
-    
+    [U, phsi] = eig(Sb,Sa+Sb);
+  
     [d, ind] = sort(abs(diag(phsi)),'descend');
+    phsi_new = diag(d);
     U_new = U(:,ind);
     
     P{i} = (U_new'*W)';
@@ -200,7 +202,7 @@ for k = 1:3
             
         end
         
-        E = cnt_c(:,mrk.pos(1,i)+500:mrk.pos(1,i)+800);
+        E = cnt_c(:,mrk.pos(1,i)+400:mrk.pos(1,i)+800);
         
         Z = P{k}'*E;
         % Feature vector
@@ -212,14 +214,42 @@ for k = 1:3
         X_train_0 = [X_train_0 fp_01];
     end
     if k == 1
-        X_train{k} = [X_train_0'; X_train_1'];
-        Y_train{k} = [repmat(0,size(X_train_0',1),1); repmat(-1,size(X_train_1',1),1)];
+        M_train{k,1} = mean(X_train_0,2);
+        M_train{k,2} = mean(X_train_1,2);
+        Q_train{k,1} = cov(X_train_0');
+        Q_train{k,2} = cov(X_train_1');
+       
     elseif k ==2
-        X_train{k} = [X_train_0'; X_train_2'];
-        Y_train{k} = [repmat(0,size(X_train_0',1),1); repmat(1,size(X_train_2',1),1)];
+        M_train{k,1} = mean(X_train_0,2);
+        M_train{k,2} = mean(X_train_2,2);
+        Q_train{k,1} = cov(X_train_0');
+        Q_train{k,2} = cov(X_train_2');
     else
-        X_train{k} = [X_train_1'; X_train_2'];
-        Y_train{k} = [repmat(-1,size(X_train_1',1),1); repmat(1,size(X_train_2',1),1)];
+        M_train{k,1} = mean(X_train_1,2);
+        M_train{k,2} = mean(X_train_2,2);
+        Q_train{k,1} = cov(X_train_1');
+        Q_train{k,2} = cov(X_train_2');
+        
+%         Mr = mean(X_train_1,2); fp_r = X_train_1;
+%         Ml = mean(X_train_2,2); fp_l = X_train_2;
+% 
+%         Qr = zeros(2*2);
+%         for i = 1:length(fp_r)
+%             tmp = (fp_r(:,i) - Mr)*(fp_r(:,i) - Mr)';
+%             Qr = Qr + tmp;
+%         end
+%         Qr = (1/(length(fp_r)-1))*Qr;
+% 
+%         Ql = zeros(2*2);
+%         for i = 1:length(fp_l)
+%             tmp = (fp_l(:,i) - Ml)*(fp_l(:,i) - Ml)';
+%             Ql = Ql + tmp;
+%         end
+%         Ql = (1/(length(fp_l)-1))*Ql;
+%         
+%         Q_train{k,1} = Qr;
+%         Q_train{k,2} = Ql;
+        
     end
 end
 

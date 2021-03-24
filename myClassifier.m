@@ -1,11 +1,23 @@
-function [check, result] = myClassifier(fp,Mr,Ml,Qr,Ql)
+function [check, result] = myClassifier(fp,Mr,Ml,Qr,Ql,k)
     
       
     check = (0.5*(fp - Mr)'*pinv(Qr)*(fp - Mr) + 0.5*log(det(Qr))) - (0.5*(fp - Ml)'*pinv(Ql)*(fp - Ml) + 0.5*log(det(Ql))); 
  
     if check > 0
-        result = 3;  % l
+        if k ==1
+            result = -1;  % l
+        elseif k==2
+            result = 1;
+        else
+            result = 1;
+        end
     else
-        result = 4;   % r
+        if k ==1
+            result = 0;  % l
+        elseif k==2
+            result = 0;
+        else
+            result = -1;
+        end
     end
 end

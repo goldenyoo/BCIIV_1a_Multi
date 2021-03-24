@@ -5,7 +5,7 @@
 %    Last Modified: 2020_02_26
 %
 % ----------------------------------------------------------------------- %
-function [predictions] = Eval(answer,P,X_train,Y_train)
+function [predictions] = Eval(answer,P,M_train,Q_train)
 % Input parameters
 data_label = string(answer(1,1));
 m = double(string(answer(2,1))); % feature vector will have length (2m)
@@ -13,7 +13,7 @@ referencing = double(string(answer(5,1))); % Non(0), CAR(1), LAP(2)
 f1 = double(string(answer(3,1)));
 f2 = double(string(answer(4,1)));
 
-ref=29;
+ref=33;
 
 %%
 % Load file
@@ -36,11 +36,12 @@ if referencing ~= 0
     
     % common average
     if referencing == 1
-        cnt_y = cnt([27 29 31 44 46 50 52 54],:); % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
+        cnt_y = cnt; % Exclude electrode (AF3, AF4, O1, O2, PO1, PO2)
         Means = (1/size(cnt,1))*sum(cnt);
         for i = 1 : size(cnt_y,1)
             cnt_y(i,:) = cnt_y(i,:) - Means; % CAR
         end
+        cnt_y = cnt_y([27 29 31 44 46 50 52 54],:);
         % LAP
     elseif referencing == 2
         cnt_n = myLAP(cnt,nfo); % Laplacian
@@ -75,11 +76,6 @@ filtered{1} = cnt_x;
 
 
 %% Train SVM
-
-Md1 = fitcdiscr(X_train{1},Y_train{1});
-Md2 = fitcdiscr(X_train{2},Y_train{2});
-Md3 = fitcdiscr(X_train{3},Y_train{3});
-
 FILENAME = strcat('C:\Users\유승재\Desktop\Motor Imagery EEG data\true_labels\BCICIV_eval_ds1',data_label,'_1000Hz_true_y.mat');
 load(FILENAME);
 
@@ -92,7 +88,7 @@ iter = 1;
 
 chunk = 150;
 
-predictions = zeros(4,size(filtered{1},2));
+predictions = zeros(1,size(filtered{1},2));
 
 while iter + chunk <= size(filtered{1},2)
     
@@ -109,16 +105,23 @@ while iter + chunk <= size(filtered{1},2)
         fp(:,k) = log(var_vector);
     end
     
-    prediction1 = predict(Md1,fp(:,1)'); %%%  0 vs -1
-    prediction2 = predict(Md2,fp(:,2)'); %%% 0 vs +1
-    prediction3 = predict(Md3,fp(:,3)'); %%% -1 vs +1
+    [tt1 prediction1] = myClassifier(fp(:,1),M_train{1,1},M_train{1,2},Q_train{1,1},Q_train{1,2},1); %%%  0 vs -1
+    [tt2 prediction2] = myClassifier(fp(:,2),M_train{2,1},M_train{2,2},Q_train{2,1},Q_train{2,2},2); %%% 0 vs +1
+    [tt3 prediction3] = myClassifier(fp(:,3),M_train{3,1},M_train{3,2},Q_train{3,1},Q_train{3,2},3); %%% -1 vs +1
+    
     prediction0 = true_y(iter);
+    
+    if prediction1== 0 & prediction2 == 0
+        prediction = 0;
+    else
+        prediction = prediction3;
+    end
+    
     for tmpp = iter:iter+chunk-1
-        predictions(:,tmpp) = [prediction0; prediction1; prediction2; prediction3];
+%         predictions(:,tmpp) = [prediction0; prediction1; prediction2; prediction3];        
+        predictions(:,tmpp) = prediction;
     end
     iter = iter + chunk*0.8;
-
-
 end
 
 
