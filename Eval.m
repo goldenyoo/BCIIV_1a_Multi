@@ -119,7 +119,7 @@ while iter + chunk <= size(filtered{1},2)
     
     for tmpp = iter:iter+chunk-1
 %         predictions(:,tmpp) = [prediction0; prediction1; prediction2; prediction3];        
-        predictions(:,tmpp) = prediction;
+        predictions(:,tmpp) = prediction3;
     end
     iter = iter + chunk*0.8;
 end

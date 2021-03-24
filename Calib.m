@@ -233,14 +233,14 @@ for k = 1:3
 %         Mr = mean(X_train_1,2); fp_r = X_train_1;
 %         Ml = mean(X_train_2,2); fp_l = X_train_2;
 % 
-%         Qr = zeros(2*2);
+%         Qr = zeros(2*m);
 %         for i = 1:length(fp_r)
 %             tmp = (fp_r(:,i) - Mr)*(fp_r(:,i) - Mr)';
 %             Qr = Qr + tmp;
 %         end
 %         Qr = (1/(length(fp_r)-1))*Qr;
 % 
-%         Ql = zeros(2*2);
+%         Ql = zeros(2*m);
 %         for i = 1:length(fp_l)
 %             tmp = (fp_l(:,i) - Ml)*(fp_l(:,i) - Ml)';
 %             Ql = Ql + tmp;
