@@ -20,17 +20,17 @@ if sum(tmp1.*tmp1) < sum(tmp2.*tmp2)
     if k==1
         result = 0;
     elseif k==2
-        result = 0;
-    else
         result = -1;
+    else
+        result = 1;
     end
 else
     if k==1
-        result = -1;
+        result = -10;
     elseif k==2
-        result = 1;
+        result = -10;
     else
-        result = 1;
+        result = -10;
     end
 end
 

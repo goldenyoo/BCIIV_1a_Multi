@@ -5,19 +5,19 @@ function [check, result] = myClassifier(fp,Mr,Ml,Qr,Ql,k)
  
     if check > 0
         if k ==1
-            result = -1;  % l
+            result = -10;  % l
         elseif k==2
-            result = 1;
+            result = -10;
         else
-            result = 1;
+            result = -10;
         end
     else
         if k ==1
             result = 0;  % l
         elseif k==2
-            result = 0;
+            result =-1;
         else
-            result = -1;
+            result = 1;
         end
     end
 end

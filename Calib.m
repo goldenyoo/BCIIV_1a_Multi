@@ -112,9 +112,10 @@ for i = 1:length(mrk.pos)
 end
 
 % Average covariance of each class
+C_0 = C_0/(a+b);
 C_1 = C_1/(a);
 C_2 = C_2/(b);
-C_0 = C_0/(a+b);
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%% P_01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,13 +123,13 @@ C_0 = C_0/(a+b);
 for i = 1:3
     if i ==1
         C_a = C_0;
-        C_b = C_1;
+        C_b = (a*C_1 + b*C_2)/(a+b);
     elseif i == 2
-        C_a = C_0;
-        C_b = C_2;
-    else
         C_a = C_1;
-        C_b = C_2;
+        C_b = ((a+b)*C_0+b*C_2)/(a+2*b);
+    else
+        C_a = C_2;
+        C_b = ((a+b)*C_0 + a*C_1)/(2*a+b);
     end
     
     C_c = C_a + C_b;
@@ -182,6 +183,9 @@ for k = 1:3
                         
             var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
             fp_01 = log(var_vector);
+            
+%             figure(f1)
+%             scatter3(fp_01(1),fp_01(2),fp_01(4),'b'); hold on;
 
             X_train_1 = [X_train_1 fp_01];
             
@@ -197,7 +201,11 @@ for k = 1:3
             
             
             var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-            fp_02 = log(var_vector);            
+            fp_02 = log(var_vector);         
+            
+%             figure(f1)
+%             scatter3(fp_02(1),fp_02(2),fp_02(4),'b'); hold on;
+            
             X_train_2 = [X_train_2 fp_02];
             
         end
@@ -210,25 +218,29 @@ for k = 1:3
         Z_reduce = [Z(1:m,:); Z(tmp_ind-(m-1):tmp_ind,:)];    
         
         var_vector = diag(Z_reduce*Z_reduce')/trace(Z_reduce*Z_reduce');
-        fp_01 = log(var_vector);        
+        fp_01 = log(var_vector);    
+        
+%         figure(f1)
+%         scatter3(fp_01(1),fp_01(2),fp_01(4),'r'); hold on;
+        
         X_train_0 = [X_train_0 fp_01];
     end
     if k == 1
         M_train{k,1} = mean(X_train_0,2);
-        M_train{k,2} = mean(X_train_1,2);
+        M_train{k,2} = mean([X_train_1 X_train_2],2);
         Q_train{k,1} = cov(X_train_0');
-        Q_train{k,2} = cov(X_train_1');
+        Q_train{k,2} = cov([X_train_1 X_train_2]');
        
     elseif k ==2
-        M_train{k,1} = mean(X_train_0,2);
-        M_train{k,2} = mean(X_train_2,2);
-        Q_train{k,1} = cov(X_train_0');
-        Q_train{k,2} = cov(X_train_2');
-    else
         M_train{k,1} = mean(X_train_1,2);
-        M_train{k,2} = mean(X_train_2,2);
+        M_train{k,2} = mean([X_train_0 X_train_2],2);
         Q_train{k,1} = cov(X_train_1');
-        Q_train{k,2} = cov(X_train_2');
+        Q_train{k,2} = cov([X_train_0 X_train_2]');
+    else
+        M_train{k,1} = mean(X_train_2,2);
+        M_train{k,2} = mean([X_train_0 X_train_1],2);
+        Q_train{k,1} = cov(X_train_2');
+        Q_train{k,2} = cov([X_train_0 X_train_1]');
         
 %         Mr = mean(X_train_1,2); fp_r = X_train_1;
 %         Ml = mean(X_train_2,2); fp_l = X_train_2;

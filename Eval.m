@@ -105,21 +105,24 @@ while iter + chunk <= size(filtered{1},2)
         fp(:,k) = log(var_vector);
     end
     
-    [tt1 prediction1] = myClassifier(fp(:,1),M_train{1,1},M_train{1,2},Q_train{1,1},Q_train{1,2},1); %%%  0 vs -1
-    [tt2 prediction2] = myClassifier(fp(:,2),M_train{2,1},M_train{2,2},Q_train{2,1},Q_train{2,2},2); %%% 0 vs +1
-    [tt3 prediction3] = myClassifier(fp(:,3),M_train{3,1},M_train{3,2},Q_train{3,1},Q_train{3,2},3); %%% -1 vs +1
+    [tt1 prediction1] = myClassifier2(fp(:,1),M_train{1,1},M_train{1,2},Q_train{1,1},Q_train{1,2},1); %%%  0 vs -1
+    [tt2 prediction2] = myClassifier2(fp(:,2),M_train{2,1},M_train{2,2},Q_train{2,1},Q_train{2,2},2); %%% 0 vs +1
+    [tt3 prediction3] = myClassifier2(fp(:,3),M_train{3,1},M_train{3,2},Q_train{3,1},Q_train{3,2},3); %%% -1 vs +1
     
     prediction0 = true_y(iter);
     
-    if prediction1== 0 & prediction2 == 0
+
+    if prediction2 == -10 && prediction3 == -10  
         prediction = 0;
-    else
-        prediction = prediction3;
+    elseif prediction3 == 1
+        prediction = 1;
+    elseif prediction2 == -1
+        prediction = -1;
     end
     
     for tmpp = iter:iter+chunk-1
 %         predictions(:,tmpp) = [prediction0; prediction1; prediction2; prediction3];        
-        predictions(:,tmpp) = prediction3;
+        predictions(:,tmpp) = prediction;
     end
     iter = iter + chunk*0.8;
 end
