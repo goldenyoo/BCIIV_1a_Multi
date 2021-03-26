@@ -22,7 +22,7 @@ if isempty(answer), error("Not enough input parameters."); end
 
 %% Conditions
 % Rereferencing method 
-ref_method = [0 1 2]; % Non(0), CAR(1), LAP(2)
+ref_method = [0 1 2]; % Non(0), CAR(1), LAP(2)git 
 
 % Reference electrode number
 ref = 33;        %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Change

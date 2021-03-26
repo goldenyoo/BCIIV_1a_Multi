@@ -119,34 +119,31 @@ while iter + chunk <= size(filtered{1},2)
     
     checker = [prediction1 prediction2 prediction3];
     checker_tt = [tt1 tt2 tt3];
-    row = find(checker);
+
+    ch0 = find(checker == 0);
+    ch1 = find(checker == -1);
+    ch2 = find(checker == 1);
     
-    if isempty(row)   
-        prediction = 0;
+if length(ch0) == 2
+    prediction = 0;
+elseif length(ch1) == 2
+    prediction = -1;
+elseif length(ch2) == 2
+    prediction = 1;
+else
+    [chul I]= max(checker_tt);
+    if I == 1
+        prediction = prediction1;
+    elseif I ==2
+        prediction = prediction2;
     else
-        if length(row)==1
-            if row == 1
-                prediction = 0;
-            elseif row == 2
-                prediction = -1;
-            else
-                prediction = 1;
-            end
-        else
-            [chul I] = max(checker_tt);
-            if I == 1
-                prediction = 0;
-            elseif I == 2
-                prediction = -1;
-            else
-                prediction = 1;
-            end
-        end
+        prediction = prediction3;
     end
+end
     
     
     for tmpp = iter:iter+chunk-1
-        predictions_tmp(:,tmpp) = [prediction0; prediction1; prediction2; prediction3; prediction;tt1;tt2;tt3];        
+        predictions_tmp(:,tmpp) = [prediction0; prediction1; prediction2; prediction3; prediction; tt1;tt2;tt3];        
         predictions(:,tmpp) = prediction;
     end
     iter = iter + chunk*0.8;

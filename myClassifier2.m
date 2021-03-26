@@ -20,9 +20,21 @@ map1 = sum(phi_1)/length(data1);
 map2 = sum(phi_2)/length(data2);
 
 if map1 > map2
-    result = 1;
+    if k == 1
+        result = 0;
+    elseif k == 2
+        result = 0;
+    else
+        result = -1;
+    end
 else
-    result = 0;
+    if k == 1
+        result = -1;
+    elseif k==2
+        result = 1;
+    else
+        result = 1;
+    end
 end
 check = map1 - map2;
 end
