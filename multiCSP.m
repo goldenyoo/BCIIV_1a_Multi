@@ -1,12 +1,13 @@
 % ----------------------------------------------------------------------- %
-%    File_name: FBCSP.m
+%    File_name: multiCSP.m
 %    Programmer: Seungjae Yoo                             
 %                                           
-%    Last Modified: 2020_02_26                           
+%    Last Modified: 2020_03_26                           
 %                                                            
  % ----------------------------------------------------------------------- %
 
 %% Get input parameter from user
+clc
 close all
 clear all
 
@@ -31,9 +32,9 @@ for i = 1:length(ref_method)
     
     answer(5,1) = {ref_method(i)};
     
-    [P,V_train,MAP] = Calib(answer,ref);
+    [P,V_train,X_train] = Calib(answer,ref);
    
-    [predictions] = Eval(answer,P,V_train,MAP); 
+    [predictions] = Eval(answer,P,V_train,X_train); 
     [score, total, mse, tmp,total_0, total_12, score_0, score_12] = Check(answer,predictions);
     
     fprintf('\nData_Label: %s\n',string(answer(1,1)));

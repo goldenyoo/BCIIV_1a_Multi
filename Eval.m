@@ -2,10 +2,10 @@
 %    File_name: Eval.m
 %    Programmer: Seungjae Yoo
 %
-%    Last Modified: 2020_02_26
+%    Last Modified: 2020_03_26
 %
 % ----------------------------------------------------------------------- %
-function [predictions] = Eval(answer,P,V_train,MAP)
+function [predictions] = Eval(answer,P,V_train,X_train)
 % Input parameters
 data_label = string(answer(1,1));
 m = double(string(answer(2,1))); % feature vector will have length (2m)
@@ -89,12 +89,12 @@ iter = 1;
 
 chunk = 150;
 
+predictions_tmp = -20*ones(8,size(filtered{1},2));
 predictions = zeros(1,size(filtered{1},2));
-
 
 while iter + chunk <= size(filtered{1},2)
     
-    fprintf("%d / %d\n",iter,size(filtered{1},2));
+%     fprintf("%d / %d\n",iter,size(filtered{1},2));
     
     E = cnt_c(:, iter:iter+chunk-1);
     
@@ -108,32 +108,45 @@ while iter + chunk <= size(filtered{1},2)
     end
     clear Z Z_reduce 
     
-    [tt1 prediction1] = myClassifier2(fp(:,1),MAP{1,1},MAP{1,2},V_train{1,1},1); %%%  0 vs -1
+     prediction0 = true_y(iter);
     
+    [tt1 prediction1] = myClassifier2(fp(:,1),X_train{1,1},X_train{1,2},V_train{1,1},1); %%%  0 vs -1
+  
+    [tt2 prediction2] = myClassifier2(fp(:,2),X_train{2,1},X_train{2,2},V_train{2,1},2); %%% 0 vs +1
+  
+    [tt3 prediction3] = myClassifier2(fp(:,3),X_train{3,1},X_train{3,2},V_train{3,1},3); %%% -1 vs +1
+        
     
-    [tt2 prediction2] = myClassifier2(fp(:,2),MAP{2,1},MAP{2,2},V_train{2,1},2); %%% 0 vs +1
+    checker = [prediction1 prediction2 prediction3];
+    checker_tt = [tt1 tt2 tt3];
+    row = find(checker);
     
-    
-    [tt3 prediction3] = myClassifier2(fp(:,3),MAP{3,1},MAP{3,2},V_train{3,1},3); %%% -1 vs +1
-    
-    
-    
-    prediction0 = true_y(iter);
-    
-
-    if prediction2 == -10 && prediction3 == -10  && prediction1 == -10  
+    if isempty(row)   
         prediction = 0;
-    elseif prediction3 == 1
-        prediction = 1;
-    elseif prediction2 == -1
-        prediction = -1;
     else
-        prediction = 0;
+        if length(row)==1
+            if row == 1
+                prediction = 0;
+            elseif row == 2
+                prediction = -1;
+            else
+                prediction = 1;
+            end
+        else
+            [chul I] = max(checker_tt);
+            if I == 1
+                prediction = 0;
+            elseif I == 2
+                prediction = -1;
+            else
+                prediction = 1;
+            end
+        end
     end
     
     
     for tmpp = iter:iter+chunk-1
-%         predictions(:,tmpp) = [prediction0; prediction1; prediction2; prediction3];        
+        predictions_tmp(:,tmpp) = [prediction0; prediction1; prediction2; prediction3; prediction;tt1;tt2;tt3];        
         predictions(:,tmpp) = prediction;
     end
     iter = iter + chunk*0.8;

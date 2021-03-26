@@ -2,10 +2,10 @@
 %    File_name: Calib.m
 %    Programmer: Seungjae Yoo
 %
-%    Last Modified: 2020_03_23
+%    Last Modified: 2020_03_26
 %
 % ----------------------------------------------------------------------- %
-function [P,V_train,MAP] = Calib(answer,ref)
+function [P,V_train,X_train] = Calib(answer,ref)
 
 % Input parameters
 data_label = string(answer(1,1));
@@ -137,6 +137,8 @@ for i = 1:3
     % EVD for composite covariance
     [V, D] = eig(C_c);
     
+    if ~isempty(find(diag(D)<0)), error("Nagative eigen value"); end
+    
     % sort eigen vector with descend manner
     [d, ind] = sort(abs(diag(D)),'descend');
     D_new = diag(d);
@@ -153,6 +155,7 @@ for i = 1:3
     
     % EVD for transformed covariance
     [U, phsi] = eig(Sb,Sa+Sb);
+    if ~isempty(find(diag(phsi)<0)), error("Nagative eigen value"); end
   
     [d, ind] = sort(abs(diag(phsi)),'descend');
     phsi_new = diag(d);
@@ -273,39 +276,8 @@ for k = 1:3
     
     V_train{k,1} = V_new(:,1); 
     
-    data1 = V_new(:,1)'*X1;
-    data2 = V_new(:,1)'*X2;
-    
-%     figure;
-%     histogram(data1); hold on;
-%     histogram(data2); hold on;
-%     legend
-    
-
-    syms x y;
-    h1 = ((4/(3*length(data1)))^0.2)*std(data1);
-    h2 = ((4/(3*length(data1)))^0.2)*std(data2);
-    phi_1 = (1/sqrt(2*pi))*exp(-y^2/(2*h1^2));
-    phi_2 = (1/sqrt(2*pi))*exp(-y^2/(2*h2^2));
-    
-    p_1 = 0;
-    for i= 1:length(data1)
-        p_1 = p_1 + subs(phi_1,x-data1(i));
-    end
-    p_1 = p_1/length(data1);
-    
-    p_2 = 0;
-    for i= 1:length(data2)
-        p_2 = p_2 + subs(phi_2,x-data2(i));
-    end
-    p_2 = p_2/length(data2);
-    
-    MAP{k,1} = p_1;
-    MAP{k,2} = p_2;
-    
-%     
-%     ezplot(p_1*200); hold on;
-%     ezplot(p_2*200); hold on;
+  
+ 
 end
 
 end
