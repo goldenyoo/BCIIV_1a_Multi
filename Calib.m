@@ -120,16 +120,19 @@ C_2 = C_2/(b);
 
 %%%%%%%%%%%%%%%%%%%%%%%% P_01 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % composite covariace
-for i = 1:3
+for i = 1:4
     if i ==1
         C_a = C_0;
         C_b = C_1;
     elseif i == 2
         C_a = C_0;
         C_b = C_2;
-    else
+    elseif i ==3
         C_a = C_1;
         C_b = C_2;
+    else
+        C_a = C_0;
+        C_b = (a*C_1+b*C_2)/(a+b);
     end
     
     C_c = C_a + C_b;
@@ -168,7 +171,7 @@ end
 % f2 = figure;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for k = 1:3
+for k = 1:4
     X_train_1 = [];
     X_train_2 = [];
     X_train_0 = [];
@@ -233,20 +236,26 @@ for k = 1:3
         Q_train{k,2} = cov(X_train_2');
         X_train{2,1} = X_train_0;
         X_train{2,2} = X_train_2;
-    else
+    elseif k == 3
         M_train{k,1} = mean(X_train_1,2);
         M_train{k,2} = mean(X_train_2,2);
         Q_train{k,1} = cov(X_train_1');
         Q_train{k,2} = cov(X_train_2');
         X_train{3,1} = X_train_1;
         X_train{3,2} = X_train_2;
-               
+    else
+        M_train{k,1} = mean(X_train_0,2);
+        M_train{k,2} = mean([X_train_1 X_train_2],2);
+        Q_train{k,1} = cov(X_train_0');
+        Q_train{k,2} = cov([X_train_1 X_train_2]');
+        X_train{4,1} = X_train_0;
+        X_train{4,2} = [X_train_1 X_train_2];               
     end
     
 end
 
 
-for k = 1:3
+for k = 1:4
     
     X1 = X_train{k,1};
     X2 = X_train{k,2};
@@ -265,8 +274,7 @@ for k = 1:3
     D_new = diag(d);
     V_new = V(:,ind);
     
-    V_train{k,1} = V_new(:,1); 
-    
+    V_train{k,1} = V_new(:,1);     
   
  
 end

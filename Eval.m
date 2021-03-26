@@ -89,7 +89,7 @@ iter = 1;
 
 chunk = 150;
 
-predictions_tmp = -20*ones(8,size(filtered{1},2));
+predictions_tmp = -20*ones(9,size(filtered{1},2));
 predictions = zeros(1,size(filtered{1},2));
 
 while iter + chunk <= size(filtered{1},2)
@@ -98,7 +98,7 @@ while iter + chunk <= size(filtered{1},2)
     
     E = cnt_c(:, iter:iter+chunk-1);
     
-    for k = 1:3
+    for k = 1:4
         Z = P{k}'*E;
         % Feature vector
         tmp_ind = size(Z,1);
@@ -116,34 +116,24 @@ while iter + chunk <= size(filtered{1},2)
   
     [tt3 prediction3] = myClassifier2(fp(:,3),X_train{3,1},X_train{3,2},V_train{3,1},3); %%% -1 vs +1
         
+    [tt4 prediction4] = myClassifier2(fp(:,4),X_train{4,1},X_train{4,2},V_train{4,1},4); %%% -1 vs +1
     
-    checker = [prediction1 prediction2 prediction3];
-    checker_tt = [tt1 tt2 tt3];
+    checker = [prediction1 prediction2 prediction3 prediction4];
+    checker_tt = [tt1 tt2 tt3 tt4];
 
-    ch0 = find(checker == 0);
-    ch1 = find(checker == -1);
-    ch2 = find(checker == 1);
-    
-if length(ch0) == 2
-    prediction = 0;
-elseif length(ch1) == 2
-    prediction = -1;
-elseif length(ch2) == 2
-    prediction = 1;
+if prediction4 ~= 0
+    prediction = prediction3;
 else
-    [chul I]= max(checker_tt);
-    if I == 1
-        prediction = prediction1;
-    elseif I ==2
-        prediction = prediction2;
+    if prediction1 == 0 && prediction2 == 0
+        prediction = 0;
     else
         prediction = prediction3;
     end
 end
-    
+
     
     for tmpp = iter:iter+chunk-1
-        predictions_tmp(:,tmpp) = [prediction0; prediction1; prediction2; prediction3; prediction; tt1;tt2;tt3];        
+        predictions_tmp(:,tmpp) = [prediction0; prediction1; prediction2; prediction3; prediction4; tt1;tt2;tt3;tt4];        
         predictions(:,tmpp) = prediction;
     end
     iter = iter + chunk*0.8;

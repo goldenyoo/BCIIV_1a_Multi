@@ -24,16 +24,20 @@ if map1 > map2
         result = 0;
     elseif k == 2
         result = 0;
-    else
+    elseif k ==3
         result = -1;
+    else
+        result  = 0;
     end
 else
     if k == 1
         result = -1;
     elseif k==2
         result = 1;
-    else
+    elseif k==3
         result = 1;
+    else
+        result = 12;
     end
 end
 check = map1 - map2;

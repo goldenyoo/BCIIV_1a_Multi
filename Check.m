@@ -33,7 +33,7 @@ for i = 1:size(true_y,1)
     elseif true_y(i)== -1
         total = total + 1;
         total_12 = total_12 + 1;
-        if predictions(i) == -1
+        if predictions(i) == -1 | predictions(i) == 1
             score = score + 1;
             score_12 = score_12 +1;        
         else
@@ -42,7 +42,7 @@ for i = 1:size(true_y,1)
     elseif true_y(i)== 1
          total = total + 1;
          total_12 = total_12 + 1;
-        if predictions(i) == 1
+        if predictions(i) == 1 | predictions(i) == -1
             score = score + 1;
             score_12 = score_12 +1;       
         else
