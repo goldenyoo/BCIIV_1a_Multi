@@ -5,7 +5,7 @@
 %    Last Modified: 2020_03_23
 %
 % ----------------------------------------------------------------------- %
-function [P,M_train,Q_train] = Calib(answer,ref)
+function [P,V_train,MAP] = Calib(answer,ref)
 
 % Input parameters
 data_label = string(answer(1,1));
@@ -230,39 +230,82 @@ for k = 1:3
         M_train{k,2} = mean([X_train_1 X_train_2],2);
         Q_train{k,1} = cov(X_train_0');
         Q_train{k,2} = cov([X_train_1 X_train_2]');
-       
+        X_train{1,1} = X_train_0;
+        X_train{1,2} = [X_train_1 X_train_2];
     elseif k ==2
         M_train{k,1} = mean(X_train_1,2);
         M_train{k,2} = mean([X_train_0 X_train_2],2);
         Q_train{k,1} = cov(X_train_1');
         Q_train{k,2} = cov([X_train_0 X_train_2]');
+        X_train{2,1} = X_train_1;
+        X_train{2,2} = [X_train_0 X_train_2];
     else
         M_train{k,1} = mean(X_train_2,2);
         M_train{k,2} = mean([X_train_0 X_train_1],2);
         Q_train{k,1} = cov(X_train_2');
         Q_train{k,2} = cov([X_train_0 X_train_1]');
-        
-%         Mr = mean(X_train_1,2); fp_r = X_train_1;
-%         Ml = mean(X_train_2,2); fp_l = X_train_2;
-% 
-%         Qr = zeros(2*m);
-%         for i = 1:length(fp_r)
-%             tmp = (fp_r(:,i) - Mr)*(fp_r(:,i) - Mr)';
-%             Qr = Qr + tmp;
-%         end
-%         Qr = (1/(length(fp_r)-1))*Qr;
-% 
-%         Ql = zeros(2*m);
-%         for i = 1:length(fp_l)
-%             tmp = (fp_l(:,i) - Ml)*(fp_l(:,i) - Ml)';
-%             Ql = Ql + tmp;
-%         end
-%         Ql = (1/(length(fp_l)-1))*Ql;
-%         
-%         Q_train{k,1} = Qr;
-%         Q_train{k,2} = Ql;
-        
+        X_train{3,1} = X_train_2;
+        X_train{3,2} = [X_train_0 X_train_1];
+               
     end
+    
+end
+
+
+for k = 1:3
+    
+    X1 = X_train{k,1};
+    X2 = X_train{k,2};
+    
+    M_1 = M_train{k,1};
+    M_2 = M_train{k,2};
+    C_1 = Q_train{k,1};
+    C_2 = Q_train{k,2};
+    
+    Sb = (M_1-M_2)*(M_1-M_2)';
+    Sw = C_1+C_2;
+    tmp = pinv(Sb)*Sw;
+    
+    [V, D] = eig(tmp);
+    [d, ind] = sort(abs(diag(D)),'descend');
+    D_new = diag(d);
+    V_new = V(:,ind);
+    
+    V_train{k,1} = V_new(:,1); 
+    
+    data1 = V_new(:,1)'*X1;
+    data2 = V_new(:,1)'*X2;
+    
+%     figure;
+%     histogram(data1); hold on;
+%     histogram(data2); hold on;
+%     legend
+    
+
+    syms x y;
+    h1 = ((4/(3*length(data1)))^0.2)*std(data1);
+    h2 = ((4/(3*length(data1)))^0.2)*std(data2);
+    phi_1 = (1/sqrt(2*pi))*exp(-y^2/(2*h1^2));
+    phi_2 = (1/sqrt(2*pi))*exp(-y^2/(2*h2^2));
+    
+    p_1 = 0;
+    for i= 1:length(data1)
+        p_1 = p_1 + subs(phi_1,x-data1(i));
+    end
+    p_1 = p_1/length(data1);
+    
+    p_2 = 0;
+    for i= 1:length(data2)
+        p_2 = p_2 + subs(phi_2,x-data2(i));
+    end
+    p_2 = p_2/length(data2);
+    
+    MAP{k,1} = p_1;
+    MAP{k,2} = p_2;
+    
+%     
+%     ezplot(p_1*200); hold on;
+%     ezplot(p_2*200); hold on;
 end
 
 end

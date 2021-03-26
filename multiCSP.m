@@ -31,9 +31,9 @@ for i = 1:length(ref_method)
     
     answer(5,1) = {ref_method(i)};
     
-    [P,M_train,Q_train] = Calib(answer,ref);
+    [P,V_train,MAP] = Calib(answer,ref);
    
-    [predictions] = Eval(answer,P,M_train,Q_train); 
+    [predictions] = Eval(answer,P,V_train,MAP); 
     [score, total, mse, tmp,total_0, total_12, score_0, score_12] = Check(answer,predictions);
     
     fprintf('\nData_Label: %s\n',string(answer(1,1)));
