@@ -35,7 +35,7 @@ for i = 1:length(ref_method)
     [P,V_train,X_train] = Calib(answer,ref);
    
     [predictions] = Eval(answer,P,V_train,X_train); 
-    [score, total, mse, tmp,total_0, total_12, score_0, score_12] = Check(answer,predictions);
+    [score, total, mse, tmp,total_0, total_12, score_0, score_12,conf_mat, kappa] = Check(answer,predictions);
     
     fprintf('\nData_Label: %s\n',string(answer(1,1)));
     fprintf('Re-referencing: %d\n',ref_method(i));
@@ -52,6 +52,10 @@ for i = 1:length(ref_method)
     
     fprintf('\nTotal_12: %d / %d\n',score_12,total_12);
     fprintf("SCORE: %f\n",100*score_12/total_12); 
+    
+    fprintf("\nKappa value: %f\n\n", kappa);
+    
+    disp(conf_mat);
 end
 
 % ----------------------------------------------------------------------- %

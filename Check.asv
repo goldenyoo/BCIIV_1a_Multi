@@ -1,4 +1,4 @@
-function [score, total ,mse, tmp, total_0, total_12, score_0, score_12,conf_mat, kappa] = Check(answer,predictions)
+function [score, total ,mse, tmp, total_0, total_12, score_0, score_12,conf_mat] = Check(answer,predictions)
 data_label = string(answer(1,1));   
 
 %% Call true label
@@ -74,10 +74,7 @@ mse = mse/total;
 
 tmp = [true_y'; predictions];
 
-N = sum(sum(conf_mat));
-p0 = sum(diag(conf_mat))/N;
-pe = (sum(conf_mat(:,1))*sum(conf_mat(1,:)) + sum(conf_mat(:,2))*sum(conf_mat(2,:)) + sum(conf_mat(:,3))*sum(conf_mat(3,:)))/N^2;
-
-kappa = (p0-pe)/(1-pe);
+N = sum(sum(conf_mat))
+p0 = 
 
 end
