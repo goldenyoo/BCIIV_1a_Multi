@@ -276,8 +276,20 @@ for k = 1:4
     
     V_train{k,1} = V_new(:,1);     
   
- 
+
 end
+% figure
+% X1 = X_train{1,1};
+% X2 = X_train{1,2};
+% for i = 1:length(X1)
+%     fp = X1(:,i);
+%     scatter3(fp(1),fp(2),fp(4),'g'); hold on;
+% end
+% for i = 1:length(X2)
+%     fp = X2(:,i);
+%     scatter3(fp(1),fp(2),fp(4),'r'); hold on;
+% end
+
 
 end
 % ----------------------------------------------------------------------- %
